@@ -1,8 +1,9 @@
 sap.ui.define([
 	"sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
-    "sap/m/MessageBox"
-], (Controller, JSONModel, MessageBox) => {
+    "sap/m/MessageBox",
+    "sap/m/MessageToast"
+], (Controller, JSONModel, MessageBox, MessageToast) => {
     	"use strict";
 
 	return Controller.extend("wordle.wordle.controller.Wordle", {
@@ -153,7 +154,7 @@ sap.ui.define([
             }
 
             if (this.aCurrentField[1] >= 5) {
-                console.log("Maximale länge erreicht!")
+                MessageToast.show("Maximale länge erreicht!");
                 return;
             }
 
@@ -173,7 +174,7 @@ sap.ui.define([
 
 		_onEnter: function () {
             if (this.aCurrentField[1] != 5) {
-                console.log("Wort unvollständig!");
+                MessageToast.show("Wort unvollständig!");
                 return;
             }
 
@@ -182,9 +183,9 @@ sap.ui.define([
             this._validateGuess(this.aGuessedLetter);
             this.aGuessedLetter = [];
 
-            if (this.aCurrentField[0] == 6) {
-                // Gameover Check
-                console.log("Spiel ende!");
+            // Gameover Check
+            if (this.aCurrentField[0] == 6 && this.bFinished == false) {
+                MessageToast.show("Das heutige Wort war: " + this.sWordleWord);
                 this.bFinished = true;
             }
 		},
@@ -212,7 +213,6 @@ sap.ui.define([
             var iPreviousRow = this.aCurrentField[0] - 1;
             var sProxyWord = this.sWordleWord;
             var sGuessedWord = aGuessedLetter.join("");
-            console.log("Geratenes Wort: " + sGuessedWord);
 
             if (this._vocalCheck(aGuessedLetter) === true) {
                 return;
