@@ -247,6 +247,7 @@ sap.ui.define([
                 MessageBox.show("Du bekommst 1 Coin!", {
                     title: "Gewonnen!"
                 });
+                this.bFinished = true;
             }
         },
 
