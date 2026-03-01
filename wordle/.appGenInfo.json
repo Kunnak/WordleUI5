@@ -1,0 +1,24 @@
+{
+  "generationParameters": {
+    "generationDate": "Sat Feb 28 2026 00:09:50 GMT+0100 (Mitteleuropäische Normalzeit)",
+    "generatorPlatform": "Visual Studio Code",
+    "serviceType": "SAP System (ABAP On-Premise)",
+    "metadataFilename": "",
+    "serviceUrl": "https://s4dev.mibs-ag.de:44301/sap/opu/odata4/sap/zui_wordle_ys/srvd/sap/zui_wordle_ys/0001/",
+    "appName": "wordle",
+    "appTitle": "Wordle",
+    "appDescription": "Wordle x UI5",
+    "appNamespace": "wordle",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.136.12",
+    "enableEslint": false,
+    "enableTypeScript": false,
+    "showMockDataInfo": true,
+    "generatorVersion": "1.20.4",
+    "template": "Basic V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [],
+    "launchText": "To launch the generated application, run the following from the generated application root folder:\n\n```\n    npm start\n```",
+    "valueHelpDownloaded": true
+  }
+}

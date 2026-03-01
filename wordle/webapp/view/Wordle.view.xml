@@ -1,0 +1,33 @@
+<mvc:View
+    	controllerName="wordle.wordle.controller.Wordle"
+    	xmlns:mvc="sap.ui.core.mvc"
+    	xmlns="sap.m"
+    	xmlns:core="sap.ui.core"
+    	displayBlock="true">
+    
+    	<Page showHeader="false" class="wordlePage">
+        	<content>
+            		<VBox alignItems="Center" justifyContent="Center" class="gameContainer">
+                
+                		<!-- Titel -->
+                		<Title text="Wordle" level="H1" class="wordleTitle"/>
+                
+                		<!-- SPIELFELD (6 Reihen mit 5 Feldern) -->
+                		<VBox class="gameBoard" items="{guesses>/rows}">
+                		    	<HBox class="gameRow" items="{guesses>fields}">
+                		        	<core:HTML content="&lt;div class='fields {guesses>state}'&gt;{guesses>letter}&lt;/div&gt;"/>
+                		    	</HBox>
+                		</VBox>
+                
+                		<!-- TASTATUR (3 Reihen) - AUSSERHALB des Spielfelds! -->
+					<VBox class="keyboard" items="{keyboard>/rows}">
+    						<HBox class="keyboardRow" items="{keyboard>keys}">
+        						<core:HTML 
+            							content="&lt;div class='key {keyboard>state} {= ${keyboard>wide} ? 'wide' : ''}' data-key='{keyboard>letter}'&gt;{keyboard>letter}&lt;/div&gt;"/>
+    						</HBox>
+					</VBox>
+
+            			</VBox>
+        	</content>
+    	</Page>
+</mvc:View>
