@@ -173,7 +173,11 @@ sap.ui.define([
 		},
 
 		_onEnter: function () {
-            if (this.aCurrentField[1] != 5) {
+            if (this.bFinished == true) {
+                return;
+            }
+
+            if (this.aCurrentField[1] != 5 && this.bFinished != true) {
                 MessageToast.show("Wort unvollständig!");
                 return;
             }
@@ -191,6 +195,10 @@ sap.ui.define([
 		},
 
 		_onBackspace: function () {
+            if (this.bFinished == true) {
+                return;
+            }
+
             if (this.aCurrentField[1] == 0) {
                 return;
             }
