@@ -3,128 +3,125 @@
 	background-color: #121213 !important;
 }
 
-.gameContainer {
-    	padding-top: 20px;
-    	min-height: 100vh;
-}
-
 /* Titel */
 .wordleTitle {
-    	font-size: 2.5rem !important;
-    	color: #ffffff !important;
-    	letter-spacing: 0.2rem;
-    	margin-bottom: 20px !important;
-    	font-family: 'UbuntuMono Nerd Font', monospace;
+    font-size: 2.5rem !important;
+    color: #ffffff !important;
+    letter-spacing: 0.2rem;
+    margin-bottom: 20px !important;
+    font-family: 'UbuntuMono Nerd Font', monospace;
 }
 
 /* Spielfeld */
+.gameContainer {
+    padding-top: 20px;
+    min-height: 100vh;
+}
 .gameBoard {
-    	gap: 2px;
+    gap: 2px;
 }
-
 .gameRow {
-    	gap: 2px;
-    	margin-bottom: 5px;
+    gap: 2px;
+    margin-bottom: 5px;
 }
 
-/* Die Fields/Boxen mit Rand */
+/* Guesses */
 .fields {
-    	width: 69px;
-    	height: 69px;
-    	border: 2px solid #3a3a3c;
-    	background-color: #000000 /* transparent */;
-    	display: flex;
-    	align-items: center;
-    	justify-content: center;
-    	font-size: 2rem;
-    	font-weight: bold;
-    	text-transform: uppercase;
-    	color: #ffffff;
-    	font-family: 'UbuntuMono Nerd Font', 'Ubuntu Nerd Font', monospace;
-    	transition: all 0.3s ease;
+    width: 69px;
+    height: 69px;
+    border: 2px solid #3a3a3c;
+    background-color:  transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #ffffff;
+    font-family: 'UbuntuMono Nerd Font', 'Ubuntu Nerd Font', monospace;
+    transition: all 0.3s ease;
 }
-
-/* Zustände */
 .fields.filled {
-    	border-color: #565758;
+    border-color: #676869;
 }
-
+.fields.active {
+	box-shadow: 0 0 8px rgba(119, 119, 119, 0.956);
+	border-color: #d4d4d45b !important;
+    /* animation: pulse-border 4s infinite !important; */
+}
+/* @keyframes pulse-border {
+    0%, 100% { 
+        border: 2px solid #7b7b7b36 !important;
+        box-shadow: none;
+    }
+    50% { 
+        border: 2px solid #ffffff94 !important;
+        box-shadow: 0 0 10px #ffffff94;
+    }
+} */
 .fields.correct {
-    	background-color: #538d4e;
-    	border-color: #538d4e;
+    background-color: #538d4e;
+    border-color: #538d4e;
 }
-
 .fields.present {
-    	background-color: #b59f3b;
-    	border-color: #b59f3b;
+    background-color: #b59f3b;
+    border-color: #b59f3b;
 }
-
 .fields.absent {
-    	background-color: #3a3a3c;
-    	border-color: #3a3a3c;
+    background-color: #3a3a3c;
+    border-color: #3a3a3c;
 }
 
-/* Keyboard Container */
+/* Keyboard */
 .keyboard {
-    	margin-top: 30px;
-    	gap: 8px;
-    	user-select: none;
+    margin-top: 30px;
+    gap: 8px;
+    user-select: none;
 }
-
 .keyboardRow {
-    	gap: 6px;
-    	justify-content: center;
-    	display: flex;
+    gap: 6px;
+    justify-content: center;
+    display: flex;
 }
 
-/* Tasten (Box) */
+/* Tasten */
 .key {
-    	min-width: 43px;
-    	height: 58px;
-    	background-color: #818384;
-    	color: #ffffff;
-    	border: none;
-    	border-radius: 4px;
-    	font-family: 'UbuntuMono Nerd Font', monospace;
-    	font-size: 0.875rem;
-    	font-weight: bold;
-    	text-transform: uppercase;
-    	display: flex;
-    	align-items: center;
-    	justify-content: center;
-    	cursor: pointer;
-    	transition: all 0.2s;
-    	padding: 0 8px;
+    min-width: 43px;
+    height: 58px;
+    background-color: #818384;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-family: 'UbuntuMono Nerd Font', monospace;
+    font-size: 1.25rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0 8px;
 }
-
-/* Breite Tasten (Enter, Backspace) */
 .key.wide {
-    	min-width: 65px;
-    	font-size: 0.75rem;
+    min-width: 75px;
+    font-size: 1rem;
 }
-
-/* Hover-Effekt */
 .key:hover {
-    	background-color: #494949;
+	transform: scale(1.05);
 }
-
 .key:active {
-    	transform: scale(0.95);
+    transform: scale(0.95);
 }
-
-/* Zustände für Einfärbung (wie beim Spielfeld) */
 .key.default {
-    	background-color: #818384;
+    background-color: #818384;
 }
-
 .key.correct {
-    	background-color: #538d4e;  /* Grün - Buchstabe ist richtig */
+    background-color: #538d4e;  /* Grün */
 }
-
 .key.present {
-    	background-color: #b59f3b;  /* Gelb - Buchstabe kommt vor */
+    background-color: #b59f3b;  /* Gelb  */
 }
-
 .key.absent {
-    	background-color: #3a3a3c;  /* Grau - Buchstabe kommt nicht vor */
+    background-color: #3a3a3c;  /* Grau  */
 }
