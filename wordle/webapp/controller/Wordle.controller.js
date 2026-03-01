@@ -20,6 +20,11 @@ sap.ui.define([
             window.oGuessModel = this.getView().getModel("guesses");
 		},
 
+		onAfterRendering: function () {
+			this._attachClickEvents();
+            this._attachKeyboardEvents();
+		},
+
 		_initGuessGrid: function () {
             var aRows = [];
             for (var i = 0; i < 6; i++) {
@@ -104,10 +109,6 @@ sap.ui.define([
             this.aCurrentField = [iRow, iCol];
 		},
 
-		onAfterRendering: function () {
-			this._attachClickEvents();
-		},
-
 		_attachClickEvents: function () {
 			var oView = this.getView();
 
@@ -130,7 +131,27 @@ sap.ui.define([
 			}
 		},
 
-		_onLetter: function (sLetter) {
+        _attachKeyboardEvents: function () {
+            document.addEventListener("keydown", (oEvent) => {
+                var sKey = oEvent.key.toUpperCase();
+
+                if (sKey.length === 1 && sKey >= "A" && sKey <= "Z") {
+                    this._onLetter(sKey);
+                }
+                else if (sKey === "ENTER") {
+                    this._onEnter();
+                }
+                else if (sKey === "BACKSPACE") {
+                    this._onBackspace();
+                }
+            });
+        },
+
+        _onLetter: function (sLetter) {
+            if (this.bFinished == true) {
+                return;
+            }
+
             if (this.aCurrentField[1] >= 5) {
                 console.log("Maximale länge erreicht!")
                 return;
@@ -155,16 +176,17 @@ sap.ui.define([
                 console.log("Wort unvollständig!");
                 return;
             }
-            if (this.aCurrentField[0] == 5) {
-                // Gameover Check
-                console.log("Spiel ende!");
-                return;
-            }
 
             this._setActiveField(this.aCurrentField[0] + 1, 0);
 
             this._validateGuess(this.aGuessedLetter);
             this.aGuessedLetter = [];
+
+            if (this.aCurrentField[0] == 6) {
+                // Gameover Check
+                console.log("Spiel ende!");
+                this.bFinished = true;
+            }
 		},
 
 		_onBackspace: function () {
