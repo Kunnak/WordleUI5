@@ -1,16 +1,18 @@
 sap.ui.define([
 	"sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator",
     "sap/m/MessageBox",
     "sap/m/MessageToast"
-], (Controller, JSONModel, MessageBox, MessageToast) => {
+], (Controller, JSONModel, Filter, FilterOperator,MessageBox, MessageToast) => {
     	"use strict";
 
 	return Controller.extend("wordle.wordle.controller.Wordle", {
 		onInit: function() {
             this.aCurrentField = [];
             this.aGuessedLetter = [];
-            this.sWordleWord = "WORDL"
+            this.sWordleWord = null;
             this.bFinished = false;
 
             this._initGuessGrid();
@@ -24,6 +26,7 @@ sap.ui.define([
 		onAfterRendering: function () {
 			this._attachClickEvents();
             this._attachKeyboardEvents();
+            this._getWordleWord();
 		},
 
 		_initGuessGrid: function () {
@@ -51,42 +54,42 @@ sap.ui.define([
             var aKeyboardRows = [
             { keys:
                 [
-                { letter: "Q", state: "default"},
-                { letter: "W", state: "default" },
-                { letter: "E", state: "default" },
-                { letter: "R", state: "default" },
-                { letter: "T", state: "default" },
-                { letter: "Z", state: "default" },
-                { letter: "U", state: "default" },
-                { letter: "I", state: "default" },
-                { letter: "O", state: "default" },
-                { letter: "P", state: "default" }
+                    { letter: "Q", state: "default"},
+                    { letter: "W", state: "default" },
+                    { letter: "E", state: "default" },
+                    { letter: "R", state: "default" },
+                    { letter: "T", state: "default" },
+                    { letter: "Z", state: "default" },
+                    { letter: "U", state: "default" },
+                    { letter: "I", state: "default" },
+                    { letter: "O", state: "default" },
+                    { letter: "P", state: "default" }
                 ]
             },
             { keys:
                 [
-                { letter: "A", state: "default" },
-                { letter: "S", state: "default" },
-                { letter: "D", state: "default" },
-                { letter: "F", state: "default" },
-                { letter: "G", state: "default" },
-                { letter: "H", state: "default" },
-                { letter: "J", state: "default" },
-                { letter: "K", state: "default" },
-                { letter: "L", state: "default" }
+                    { letter: "A", state: "default" },
+                    { letter: "S", state: "default" },
+                    { letter: "D", state: "default" },
+                    { letter: "F", state: "default" },
+                    { letter: "G", state: "default" },
+                    { letter: "H", state: "default" },
+                    { letter: "J", state: "default" },
+                    { letter: "K", state: "default" },
+                    { letter: "L", state: "default" }
                 ]
             },
             { keys:
                 [
-                { letter: "BACKSPACE", state: "default", wide: true },
-                { letter: "Y", state: "default" },
-                { letter: "X", state: "default" },
-                { letter: "C", state: "default" },
-                { letter: "V", state: "default" },
-                { letter: "B", state: "default" },
-                { letter: "N", state: "default" },
-                { letter: "M", state: "default" },
-                { letter: "ENTER", state: "default", wide: true }
+                    { letter: "BACKSPACE", state: "default", wide: true },
+                    { letter: "Y", state: "default" },
+                    { letter: "X", state: "default" },
+                    { letter: "C", state: "default" },
+                    { letter: "V", state: "default" },
+                    { letter: "B", state: "default" },
+                    { letter: "N", state: "default" },
+                    { letter: "M", state: "default" },
+                    { letter: "ENTER", state: "default", wide: true }
                 ]
             }];
 
@@ -297,6 +300,75 @@ sap.ui.define([
                         }
                     }
                 }
+            }
+        },
+
+        _getWordleFilter: function(field, value) {
+            var aFilters = [];
+            aFilters.push(
+                new Filter({
+                    path:field,
+                    operator:FilterOperator.EQ,
+                    value1:value,
+                })
+            );
+            return aFilters;
+        },
+
+        _getWordsFilter: function() {
+
+        },
+
+        _getWordleWord: async function () {
+            var oModel = this.getView().getModel();
+
+            let d = new Date();
+            let yyyy = d.getFullYear();
+            let mm = String(d.getMonth() + 1).padStart(2, '0');
+            let dd = String(d.getDate()).padStart(2, '0');
+            let formatted = `${yyyy}-${mm}-${dd}`;
+
+            var aWordleFilter = this._getWordleFilter("WordleDate", formatted);
+            var oWordsBinding = oModel.bindList("/Words");
+            var oWordleBinding = oModel.bindList(
+                "/Wordle",
+                null,
+                null,
+                aWordleFilter
+            );
+            this.aWordles = null;
+
+            var that = this;
+            await oWordleBinding.requestContexts(0,1).then((aContexts) => {
+
+                that.aWordles = aContexts.map((oContext) => {
+                    var oObj = oContext.getObject();
+                    return {
+                        date: oObj.WordleDate,
+                        word: oObj.Word
+                    };
+                })
+            });
+
+            if (this.aWordles[0] != null) {
+                this.sWordleWord = this.aWordles[0].word.toUpperCase();
+            }
+
+            console.log(this.sWordleWord);
+
+            if (this.sWordleWord != null) {
+                console.log("!= null");
+            } else {
+                console.log("== null");
+
+                oWordsBinding.requestContexts(0, 9999).then((aContexts) => {
+                    var aWords = aContexts.map((oContext) => oContext.getObject().Word);
+                    var sRandom = aWords[Math.floor(Math.random() * aWords.length)];
+                    this.sWordleWord = sRandom.toUpperCase();
+                    console.log("Wort geladen:", this.sWordleWord);
+                }).catch((oError) => {
+                    console.error("Fehler:", oError);
+                });
             }
         },
 	});
