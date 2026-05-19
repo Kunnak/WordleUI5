@@ -259,6 +259,7 @@ sap.ui.define([
                     title: "Gewonnen!"
                 });
                 this.bFinished = true;
+                this._saveGame(this.bFinished);
             }
         },
 
@@ -356,20 +357,48 @@ sap.ui.define([
 
             console.log(this.sWordleWord);
 
-            if (this.sWordleWord != null) {
-                console.log("!= null");
-            } else {
-                console.log("== null");
-
+            if (this.sWordleWord == null) {
                 oWordsBinding.requestContexts(0, 9999).then((aContexts) => {
                     var aWords = aContexts.map((oContext) => oContext.getObject().Word);
                     var sRandom = aWords[Math.floor(Math.random() * aWords.length)];
                     this.sWordleWord = sRandom.toUpperCase();
                     console.log("Wort geladen:", this.sWordleWord);
+                    this._saveTodaysWordle(this.sWordleWord);
                 }).catch((oError) => {
                     console.error("Fehler:", oError);
                 });
             }
         },
+        
+        _saveTodaysWordle: function (sWord) {
+            var oModel = this.getView().getModel(); 
+            var oListBinding = oModel.bindList("/Wordle");
+            this.oWordleContext = oListBinding.create({ Word : sWord });
+            // oContext.created().then(function () {
+            //     var oActivate = oModel.bindContext(
+            //         "com.sap.gateway.srvd.zui_wordle_ys.v0001.Activate(...)",
+            //         oContext
+            //     );
+            //     return oActivate.execute();
+            // });
+        },
+
+        _saveGame: function (bDone) {
+            var oModel = this.getView().getModel();
+            var oPlayerBinding = oModel.bindList(
+                "_Player",
+                this.oWordleContext
+            );
+
+            var oPlayerContext = oPlayerBinding.create({
+                Time: 30,
+                Trys: 1,
+                Done: bDone
+            });
+
+        },
+
+        // ...
+        
 	});
 });
