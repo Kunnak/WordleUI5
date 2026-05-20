@@ -26,8 +26,20 @@ sap.ui.define([
 		onAfterRendering: function () {
 			this._attachClickEvents();
             this._attachKeyboardEvents();
+            this._startTimer();
             this._getWordleWord();
 		},
+
+        _startTimer: function () {
+            this.iStartTime = Date.now();
+        },
+
+        _stopTimer: function () {
+            var iEndTime = Date.now();
+            var iEllapsedTime = Math.round((iEndTime - this.iStartTime) / 1000);
+            console.log("Benötigte Zeit:", iEllapsedTime)
+            return iEllapsedTime;
+        },
 
 		_initGuessGrid: function () {
             var aRows = [];
@@ -259,7 +271,7 @@ sap.ui.define([
                     title: "Gewonnen!"
                 });
                 this.bFinished = true;
-                this._saveGame(this.bFinished);
+                this._saveGame(this.aCurrentField[0], this.bFinished);
             }
         },
 
@@ -316,88 +328,90 @@ sap.ui.define([
             return aFilters;
         },
 
-        _getWordsFilter: function() {
-
-        },
-
         _getWordleWord: async function () {
             var oModel = this.getView().getModel();
-
+        
             let d = new Date();
-            let yyyy = d.getFullYear();
-            let mm = String(d.getMonth() + 1).padStart(2, '0');
-            let dd = String(d.getDate()).padStart(2, '0');
-            let formatted = `${yyyy}-${mm}-${dd}`;
-
+            let formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        
             var aWordleFilter = this._getWordleFilter("WordleDate", formatted);
-            var oWordsBinding = oModel.bindList("/Words");
-            var oWordleBinding = oModel.bindList(
-                "/Wordle",
-                null,
-                null,
-                aWordleFilter
-            );
-            this.aWordles = null;
-
-            var that = this;
-            await oWordleBinding.requestContexts(0,1).then((aContexts) => {
-
-                that.aWordles = aContexts.map((oContext) => {
-                    var oObj = oContext.getObject();
-                    return {
-                        date: oObj.WordleDate,
-                        word: oObj.Word
-                    };
-                })
-            });
-
-            if (this.aWordles[0] != null) {
-                this.sWordleWord = this.aWordles[0].word.toUpperCase();
+            var oWordleBinding = oModel.bindList("/Wordle", null, null, aWordleFilter);
+        
+            const aContexts = await oWordleBinding.requestContexts(0, 1);
+        
+            if (aContexts.length > 0) {
+                this.sWordleWord = aContexts[0].getObject().Word.toUpperCase();
+                console.log("Bestehendes Wordle geladen:", this.sWordleWord);
+        
+                var bIsActive = aContexts[0].getProperty("IsActiveEntity");
+        
+                if (bIsActive) {
+                    this.oWordleContext = await this._editDraft(aContexts[0]);
+                } else {
+                    this.oWordleContext = aContexts[0];
+                }
+        
+            } else {
+                await this._loadRandomWordAndSave();
             }
-
-            console.log(this.sWordleWord);
-
-            if (this.sWordleWord == null) {
-                oWordsBinding.requestContexts(0, 9999).then((aContexts) => {
-                    var aWords = aContexts.map((oContext) => oContext.getObject().Word);
-                    var sRandom = aWords[Math.floor(Math.random() * aWords.length)];
-                    this.sWordleWord = sRandom.toUpperCase();
-                    console.log("Wort geladen:", this.sWordleWord);
-                    this._saveTodaysWordle(this.sWordleWord);
-                }).catch((oError) => {
-                    console.error("Fehler:", oError);
-                });
-            }
+        
         },
         
-        _saveTodaysWordle: function (sWord) {
-            var oModel = this.getView().getModel(); 
-            var oListBinding = oModel.bindList("/Wordle");
-            this.oWordleContext = oListBinding.create({ Word : sWord });
-            // oContext.created().then(function () {
-            //     var oActivate = oModel.bindContext(
-            //         "com.sap.gateway.srvd.zui_wordle_ys.v0001.Activate(...)",
-            //         oContext
-            //     );
-            //     return oActivate.execute();
-            // });
-        },
-
-        _saveGame: function (bDone) {
+        _editDraft: async function (oActiveContext) {
             var oModel = this.getView().getModel();
-            var oPlayerBinding = oModel.bindList(
-                "_Player",
-                this.oWordleContext
+        
+            var oOperation = oModel.bindContext(
+                "com.sap.gateway.srvd.zui_wordle_ys.v0001.Edit(...)",
+                oActiveContext
             );
-
+        
+            oOperation.setParameter("PreserveChanges", true);
+        
+            const oDraftContext = await oOperation.execute();
+            return oDraftContext;
+        },
+        
+        _loadRandomWordAndSave: async function () {
+            var oModel = this.getView().getModel();
+            var oWordsBinding = oModel.bindList("/Words");
+        
+            const aContexts = await oWordsBinding.requestContexts(0, 9999);
+            var aWords = aContexts.map((oContext) => oContext.getObject().Word);
+            var sRandom = aWords[Math.floor(Math.random() * aWords.length)];
+            this.sWordleWord = sRandom.toUpperCase();
+        
+            console.log("Zufälliges Wort geladen:", this.sWordleWord);
+            await this._saveTodaysWordle(this.sWordleWord);
+        },
+        
+        _saveTodaysWordle: async function (sWord) {
+            var oModel = this.getView().getModel();
+            var oListBinding = oModel.bindList("/Wordle");
+            this.oWordleContext = oListBinding.create({ Word: sWord });
+            await this.oWordleContext.created();
+        },
+        
+        _saveGame: async function (sTrys, bDone) {
+            var iSeconds = this._stopTimer();
+            var oModel = this.getView().getModel();
+            var oPlayerBinding = oModel.bindList("_Player", this.oWordleContext);
             var oPlayerContext = oPlayerBinding.create({
-                Time: 30,
-                Trys: 1,
-                Done: bDone
+                Time: iSeconds,
+                Trys: sTrys,
+                Done: bDone ? "X" : ""
+            });
+        
+            await oPlayerContext.created().catch((oError) => {
+                console.error("Fehler Detail:", oError);
+                console.error("Fehler Message:", oError.message);
             });
 
-        },
-
+            var oOperation = oModel.bindContext(
+                "com.sap.gateway.srvd.zui_wordle_ys.v0001.Activate(...)",
+                this.oWordleContext
+            );
+            await oOperation.execute();
+        }
         // ...
         
 	});
