@@ -338,6 +338,7 @@ sap.ui.define([
             var oWordleBinding = oModel.bindList("/Wordle", null, null, aWordleFilter);
         
             const aContexts = await oWordleBinding.requestContexts(0, 1);
+            console.log(aContexts);
         
             if (aContexts.length > 0) {
                 this.sWordleWord = aContexts[0].getObject().Word.toUpperCase();
@@ -354,7 +355,6 @@ sap.ui.define([
             } else {
                 await this._loadRandomWordAndSave();
             }
-        
         },
         
         _editDraft: async function (oActiveContext) {
@@ -411,7 +411,8 @@ sap.ui.define([
                 this.oWordleContext
             );
             await oOperation.execute();
-        }
+        },
+
         // ...
         
 	});
