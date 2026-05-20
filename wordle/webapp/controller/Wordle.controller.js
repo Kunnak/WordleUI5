@@ -205,6 +205,7 @@ sap.ui.define([
             // Gameover Check
             if (this.aCurrentField[0] == 6 && this.bFinished == false) {
                 MessageToast.show("Das heutige Wort war: " + this.sWordleWord);
+                this._saveGame(this.aCurrentField[0], this.bFinished);
                 this.bFinished = true;
             }
 		},
