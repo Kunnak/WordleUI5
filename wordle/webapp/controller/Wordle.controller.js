@@ -41,6 +41,31 @@ sap.ui.define([
             return iEllapsedTime;
         },
 
+        _getCurrentUser: async function () {
+            const oResponse = await fetch("/sap/bc/ui2/start_up");
+            const oData = await oResponse.json();
+            console.log("SAP User:", oData.id);
+            return oData.id;
+        },
+
+        _checkAlreadyPlayed: async function () {
+            var oModel = this.getView().getModel();
+
+            var oPlayerBinding = oModel.bindList("_Player", this.oWordleContext);
+            const aContexts = await oPlayerBinding.requestContexts(0, 9999);
+
+            console.log("Gefundene Player heute:", aContexts.length);
+
+            var bAlreadyPlayed = aContexts.some((oContext) => {
+                var sPlayer = oContext.getObject().Player;
+                console.log("Player:", sPlayer, "| Current:", this.sCurrentUser);
+                return sPlayer === this.sCurrentUser;
+            });
+
+            console.log("Bereits gespielt:", bAlreadyPlayed);
+            return bAlreadyPlayed;
+        },
+
 		_initGuessGrid: function () {
             var aRows = [];
             for (var i = 0; i < 6; i++) {
@@ -339,6 +364,8 @@ sap.ui.define([
             var aWordleFilter = this._getWordleFilter("WordleDate", formatted);
             var oWordleBinding = oModel.bindList("/Wordle", null, null, aWordleFilter);
 
+            this.sCurrentUser = await this._getCurrentUser();
+
             const aContexts = await oWordleBinding.requestContexts(0, 1);
 
             if (aContexts.length > 0) {
@@ -358,6 +385,13 @@ sap.ui.define([
 
             } else {
                 await this._loadRandomWordAndSave();
+            }
+
+            var bAlreadyPlayed = await this._checkAlreadyPlayed();
+            if (bAlreadyPlayed) {
+                MessageBox.information("Du hast das heutige Wordle bereits gespielt!");
+                this.bFinished = true; // Eingabe sperren
+                return;
             }
 
             console.log("Finales Wort:", this.sWordleWord);
