@@ -44,7 +44,7 @@ sap.ui.define([
         _getCurrentUser: async function () {
             const oResponse = await fetch("/sap/bc/ui2/start_up");
             const oData = await oResponse.json();
-            console.log("SAP User:", oData.id);
+            console.log("User:", oData.id);
             return oData.id;
         },
 
@@ -54,11 +54,10 @@ sap.ui.define([
             var oPlayerBinding = oModel.bindList("_Player", this.oWordleContext);
             const aContexts = await oPlayerBinding.requestContexts(0, 9999);
 
-            console.log("Gefundene Player heute:", aContexts.length);
+            console.log("Gefundene Spieler heute:", aContexts.length);
 
             var bAlreadyPlayed = aContexts.some((oContext) => {
                 var sPlayer = oContext.getObject().Player;
-                console.log("Player:", sPlayer, "| Current:", this.sCurrentUser);
                 return sPlayer === this.sCurrentUser;
             });
 
