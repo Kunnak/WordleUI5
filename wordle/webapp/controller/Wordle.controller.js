@@ -23,11 +23,11 @@ sap.ui.define([
             window.oGuessModel = this.getView().getModel("guesses");
 		},
 
-		onAfterRendering: function () {
+		onAfterRendering: async function () {
+            await this._getWordleWord();
 			this._attachClickEvents();
             this._attachKeyboardEvents();
             this._startTimer();
-            this._getWordleWord();
 		},
 
         _startTimer: function () {
@@ -45,6 +45,7 @@ sap.ui.define([
             const oResponse = await fetch("/sap/bc/ui2/start_up");
             const oData = await oResponse.json();
             console.log("User:", oData.id);
+            this._saveLog("Login");
             return oData.id;
         },
 
@@ -229,6 +230,7 @@ sap.ui.define([
             // Gameover Check
             if (this.aCurrentField[0] == 6 && this.bFinished == false) {
                 MessageToast.show("Das heutige Wort war: " + this.sWordleWord);
+                this._saveLog("Loss");
                 this._saveGame(this.aCurrentField[0], this.bFinished);
                 this.bFinished = true;
             }
@@ -262,6 +264,7 @@ sap.ui.define([
             var sProxyWord = this.sWordleWord;
             var sGuessedWord = aGuessedLetter.join("");
             console.log("Guessed: ", sGuessedWord);
+            this._saveLog('Guess', sGuessedWord);
 
             if (this._vocalCheck(aGuessedLetter) === true) {
                 return;
@@ -297,6 +300,7 @@ sap.ui.define([
                     title: "Gewonnen!"
                 });
                 this.bFinished = true;
+                this._saveLog("Win");
                 this._saveGame(this.aCurrentField[0], this.bFinished);
             }
         },
@@ -389,7 +393,7 @@ sap.ui.define([
             var bAlreadyPlayed = await this._checkAlreadyPlayed();
             if (bAlreadyPlayed) {
                 MessageBox.information("Du hast das heutige Wordle bereits gespielt!");
-                this.bFinished = true; // Eingabe sperren
+                this.bFinished = true;
                 return;
             }
 
@@ -401,7 +405,6 @@ sap.ui.define([
             var oListBinding = oModel.bindList("/Wordle");
             this.oWordleContext = oListBinding.create({ Word: sWord });
             await this.oWordleContext.created();
-
             await this._activateDraft(this.oWordleContext);
 
             let d = new Date();
@@ -477,13 +480,6 @@ sap.ui.define([
             await this._saveTodaysWordle(this.sWordleWord);
         },
         
-        _saveTodaysWordle: async function (sWord) {
-            var oModel = this.getView().getModel();
-            var oListBinding = oModel.bindList("/Wordle");
-            this.oWordleContext = oListBinding.create({ Word: sWord });
-            await this.oWordleContext.created();
-        },
-        
         _saveGame: async function (sTrys, bDone) {
             this.oWordleContext = await this._editDraft(this.oWordleContext);
             var iSeconds = this._stopTimer();
@@ -502,6 +498,23 @@ sap.ui.define([
 
             this._oWordleContext = await this._activateDraft(this.oWordleContext);
 
+        },
+
+        _saveLog: async function (pLogType, pGuess) {
+            var oModel = this.getView().getModel();
+            var oLogBinding = oModel.bindList("/Logger");
+            var sFormattedGuess = this._formatWordToUpper(pGuess);
+            var oLogContext = oLogBinding.create({
+                LogType: pLogType,
+                Guess: sFormattedGuess ? sFormattedGuess : ""
+            });
+
+            await oLogContext.created();
+        },
+
+        _formatWordToUpper: function (sWord) {
+            if (!sWord) { return "" };
+            return sWord.charAt(0).toUpperCase() + sWord.slice(1).toLowerCase();
         },
 
         // ...
