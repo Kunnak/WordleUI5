@@ -14,20 +14,18 @@ sap.ui.define([
             this.aGuessedLetter = [];
             this.sWordleWord = null;
             this.bFinished = false;
-
-            this._initGuessGrid();
-            this._initKeyboard();
-            this._setActiveField(0,0);
-
-            // Debugging
-            window.oGuessModel = this.getView().getModel("guesses");
 		},
 
 		onAfterRendering: async function () {
+            MessageToast.show("Lade Spiel..");
+            this._initGuessGrid();
+            this._initKeyboard();
+            this._setActiveField(0,0);
+            this._startTimer();
             await this._getWordleWord();
 			this._attachClickEvents();
             this._attachKeyboardEvents();
-            this._startTimer();
+            MessageToast.show("Laden abgeschlossen!");
 		},
 
         _startTimer: function () {
@@ -45,25 +43,34 @@ sap.ui.define([
             const oResponse = await fetch("/sap/bc/ui2/start_up");
             const oData = await oResponse.json();
             console.log("User:", oData.id);
-            this._saveLog("Login");
             return oData.id;
         },
 
         _checkAlreadyPlayed: async function () {
             var oModel = this.getView().getModel();
 
-            var oPlayerBinding = oModel.bindList("_Player", this.oWordleContext);
-            const aContexts = await oPlayerBinding.requestContexts(0, 9999);
+            let d = new Date();
+            let formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-            console.log("Gefundene Spieler heute:", aContexts.length);
+            var aLogFilter = this._getWordleFilter("LogDate", formatted);
+            var oLoggerBinding = oModel.bindList("/Logger", null, null, aLogFilter);
+            const aContexts = await oLoggerBinding.requestContexts(0, 9999);
 
-            var bAlreadyPlayed = aContexts.some((oContext) => {
-                var sPlayer = oContext.getObject().Player;
-                return sPlayer === this.sCurrentUser;
+            var aMyLogs = aContexts.filter((oContext) => {
+                return oContext.getObject().UserName === this.sCurrentUser;
             });
 
-            console.log("Bereits gespielt:", bAlreadyPlayed);
-            return bAlreadyPlayed;
+            var bFinished = aMyLogs.some((oContext) => {
+                var sType = oContext.getObject().LogType;
+                return sType === "Win" || sType === "Loss";
+            });
+            if (bFinished) {
+                return { status: "finished", logs: aMyLogs };
+            }
+            if (aMyLogs.length > 0) {
+                return { status: "inProgress", logs: aMyLogs };
+            }
+            return { status: "new", logs: [] };
         },
 
 		_initGuessGrid: function () {
@@ -227,10 +234,11 @@ sap.ui.define([
             this._validateGuess(this.aGuessedLetter);
             this.aGuessedLetter = [];
 
-            // Gameover Check
             if (this.aCurrentField[0] == 6 && this.bFinished == false) {
                 MessageToast.show("Das heutige Wort war: " + this.sWordleWord);
-                this._saveLog("Loss");
+                var iEndTime = Date.now();
+                var iEllapsedTime = Math.round((iEndTime - this.iStartTime) / 1000);
+                this._saveLog("Loss", "", iEllapsedTime);
                 this._saveGame(this.aCurrentField[0], this.bFinished);
                 this.bFinished = true;
             }
@@ -259,12 +267,20 @@ sap.ui.define([
             this._setActiveField(this.aCurrentField[0], this.aCurrentField[1] - 1);
         },
 
-        _validateGuess: function (aGuessedLetter) {
-            var iPreviousRow = this.aCurrentField[0] - 1;
+        _validateGuess: function (aGuessedLetter, iOverrideRow) {
+            var iPreviousRow = iOverrideRow !== undefined 
+                               ? iOverrideRow 
+                               : this.aCurrentField[0] - 1;
+            
             var sProxyWord = this.sWordleWord;
             var sGuessedWord = aGuessedLetter.join("");
             console.log("Guessed: ", sGuessedWord);
-            this._saveLog('Guess', sGuessedWord);
+
+            if (iOverrideRow === undefined) {
+                var iEndTime = Date.now();
+                var iEllapsedTime = Math.round((iEndTime - this.iStartTime) / 1000);
+                this._saveLog('Guess', sGuessedWord, iEllapsedTime);
+            }
 
             if (this._vocalCheck(aGuessedLetter) === true) {
                 return;
@@ -284,24 +300,26 @@ sap.ui.define([
             // present and absent
             for (var i = 0; i < 5; i++) {
                 if (aGuessCopy[i] === null) continue;
-
                 var sLetter = aGuessCopy[i];
-
                 if (sProxyWord.includes(sLetter)) {
                     this._setFieldState(iPreviousRow, i, "present", sLetter);
                     sProxyWord = sProxyWord.replace(sLetter, "$");
                 } else {
                     this._setFieldState(iPreviousRow, i, "absent", sLetter);
                 }
-            }            
+            }
 
-            if (sGuessedWord === this.sWordleWord) {
-                MessageBox.show("Du bekommst 1 Coin!", {
-                    title: "Gewonnen!"
-                });
-                this.bFinished = true;
-                this._saveLog("Win");
-                this._saveGame(this.aCurrentField[0], this.bFinished);
+            if (iOverrideRow === undefined) {
+                if (sGuessedWord === this.sWordleWord) {
+                    MessageBox.show("Du bekommst 1 Coin!", {
+                        title: "Gewonnen!"
+                    });
+                    this.bFinished = true;
+                    var iEndTime = Date.now();
+                    var iEllapsedTime = Math.round((iEndTime - this.iStartTime) / 1000);
+                    this._saveLog("Win", "", iEllapsedTime);
+                    this._saveGame(this.aCurrentField[0], this.bFinished);
+                }
             }
         },
 
@@ -309,9 +327,7 @@ sap.ui.define([
             var vocals = "AEIOU";
             for (var i = 0; i < 6; i++) {
                 if (i === 5) {
-                    MessageBox.show("Bruh! (ง •̀_•́)ง", {
-                        title: "-1 Coin!"
-                    });
+                    MessageToast.show("Bruh! (ง •̀_•́)ง");
                     return true;
                 }
                 if (!(vocals.includes(aGuess[i]))) {
@@ -368,12 +384,10 @@ sap.ui.define([
             var oWordleBinding = oModel.bindList("/Wordle", null, null, aWordleFilter);
 
             this.sCurrentUser = await this._getCurrentUser();
-
             const aContexts = await oWordleBinding.requestContexts(0, 1);
 
             if (aContexts.length > 0) {
                 this.sWordleWord = aContexts[0].getObject().Word.toUpperCase();
-
                 var bIsActive = aContexts[0].getProperty("IsActiveEntity");
 
                 if (bIsActive) {
@@ -381,7 +395,6 @@ sap.ui.define([
 
                 } else {
                     await this._activateDraft(aContexts[0]);
-
                     const aRefreshed = await oWordleBinding.requestContexts(0, 1);
                     this.oWordleContext = aRefreshed[0];
                 }
@@ -390,14 +403,21 @@ sap.ui.define([
                 await this._loadRandomWordAndSave();
             }
 
-            var bAlreadyPlayed = await this._checkAlreadyPlayed();
-            if (bAlreadyPlayed) {
-                MessageBox.information("Du hast das heutige Wordle bereits gespielt!");
+            var oPlayStatus = await this._checkAlreadyPlayed();
+
+            if (oPlayStatus.status === "finished") {
+                MessageToast.show("Du hast das heutige Wordle bereits gespielt!");
+                await this._restoreGameState(oPlayStatus.logs);
                 this.bFinished = true;
                 return;
+            } else if (oPlayStatus.status === "inProgress") {
+                console.log("Spielstand wird wiederhergestellt...");
+                MessageToast.show("Viel Erfolg! :)");
+                await this._restoreGameState(oPlayStatus.logs);
+            } else {
+                console.log("Neues Spiel starten");
             }
-
-            console.log("Finales Wort:", this.sWordleWord);
+            console.log("Heutiges Wort:", this.sWordleWord);
         },
 
         _saveTodaysWordle: async function (sWord) {
@@ -500,13 +520,14 @@ sap.ui.define([
 
         },
 
-        _saveLog: async function (pLogType, pGuess) {
+        _saveLog: async function (pLogType, pGuess, pTime) {
             var oModel = this.getView().getModel();
             var oLogBinding = oModel.bindList("/Logger");
             var sFormattedGuess = this._formatWordToUpper(pGuess);
             var oLogContext = oLogBinding.create({
                 LogType: pLogType,
-                Guess: sFormattedGuess ? sFormattedGuess : ""
+                Guess: sFormattedGuess ? sFormattedGuess : "",
+                Time: pTime ? pTime : 0
             });
 
             await oLogContext.created();
@@ -515,6 +536,36 @@ sap.ui.define([
         _formatWordToUpper: function (sWord) {
             if (!sWord) { return "" };
             return sWord.charAt(0).toUpperCase() + sWord.slice(1).toLowerCase();
+        },
+
+        _restoreGameState: async function (aLogs) {
+            var aGuessLogs = aLogs.filter((oContext) => {
+                return oContext.getObject().LogType === "Guess";
+            });
+
+            console.log("Wiederherzustellende Versuche:", aGuessLogs.length);
+
+            if (aGuessLogs.length > 0) {
+                var iMaxTime = Math.max(...aGuessLogs.map((oContext) => {
+                    return oContext.getObject().Time || 0;
+                }));
+                console.log("Verbrauchte Zeit:", iMaxTime, "Sekunden");
+                this.iStartTime = Date.now() - (iMaxTime * 1000);
+            }
+
+            for (let i = 0; i < aGuessLogs.length; i++) {
+                var sGuess = aGuessLogs[i].getObject().Guess.toUpperCase();
+                var aLetters = sGuess.split("");
+
+                for (let j = 0; j < aLetters.length; j++) {
+                    var oGuessModel = this.getView().getModel("guesses");
+                    oGuessModel.setProperty("/rows/" + i + "/fields/" + j + "/letter", aLetters[j]);
+                }
+
+                this._validateGuess(aLetters, i);
+                this.aCurrentField = [i + 1, 0];
+            }
+            this._setActiveField(aGuessLogs.length, 0);
         },
 
         // ...
